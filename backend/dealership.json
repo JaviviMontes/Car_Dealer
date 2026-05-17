@@ -1,0 +1,45 @@
+{
+  "dealership": {
+    "name": "AutoPrime Madrid",
+    "brands": ["BMW", "MINI"],
+    "hours": "Mon–Fri 9:00–19:00, Sat 10:00–14:00, Sun closed",
+    "address": "Calle de Serrano 45, Madrid",
+    "phone": "+34 91 000 0000",
+    "email": "info@autoprime-madrid.com"
+  },
+  "inventory": [
+    { "model": "BMW 3 Series 320d",  "year": 2024, "price_eur": 45900, "fuel": "Diesel",   "available": true  },
+    { "model": "BMW 5 Series 530e",  "year": 2024, "price_eur": 62400, "fuel": "Hybrid",   "available": true  },
+    { "model": "BMW X3 xDrive20d",   "year": 2024, "price_eur": 57800, "fuel": "Diesel",   "available": true  },
+    { "model": "BMW X5 xDrive40i",   "year": 2024, "price_eur": 78500, "fuel": "Petrol",   "available": true  },
+    { "model": "BMW iX3",            "year": 2024, "price_eur": 68200, "fuel": "Electric", "available": false },
+    { "model": "MINI Cooper S",      "year": 2024, "price_eur": 32400, "fuel": "Petrol",   "available": false },
+    { "model": "MINI Countryman SE", "year": 2024, "price_eur": 38900, "fuel": "Hybrid",   "available": true  }
+  ],
+  "faqs": [
+    {
+      "q": "Can I book a test drive?",
+      "a": "Yes, test drives are available Monday to Saturday. You can book by phone or ask me to note your preferred date and model."
+    },
+    {
+      "q": "Do you offer financing?",
+      "a": "Yes, we offer BMW Financial Services with 0% APR on selected models through June 2025, and flexible monthly payment plans."
+    },
+    {
+      "q": "Do you buy or accept trade-ins?",
+      "a": "Yes, we offer trade-in valuations on any make or model. Bring your vehicle any weekday and we will provide a same-day estimate."
+    },
+    {
+      "q": "Do you have electric vehicles?",
+      "a": "Yes, we stock the BMW iX3 and the MINI Countryman SE hybrid. The iX3 is currently on order but we can reserve one for you."
+    },
+    {
+      "q": "Do you have a service centre?",
+      "a": "Yes, our authorised BMW service centre is open Monday to Friday 8:00–18:00. You can book a service appointment by phone or online."
+    },
+    {
+      "q": "Where are you located and how do I get there?",
+      "a": "We are at Calle de Serrano 45, Madrid. Closest metro is Serrano on Line 4. Parking is available in the adjacent Interparking."
+    }
+  ]
+}
