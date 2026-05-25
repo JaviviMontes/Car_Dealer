@@ -34,7 +34,7 @@ app = FastAPI(
 # Allow the HTML frontend (served from a different port in dev) to call the API
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],   # tighten this in production
+    allow_origins=["*"],   
     allow_methods=["*"],
     allow_headers=["*"],
 )

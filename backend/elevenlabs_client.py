@@ -11,12 +11,9 @@ from fastapi import HTTPException
 ELEVENLABS_API_KEY = os.getenv("ELEVENLABS_API_KEY", "")
 BASE_URL = "https://api.elevenlabs.io/v1"
 
-# Voice ID to use for TTS.  "Rachel" is a warm, professional English voice
-# available on the free tier.  Override via env var to try other voices.
-# Browse voices at: https://elevenlabs.io/voice-library
 VOICE_ID = os.getenv("ELEVENLABS_VOICE_ID", "pNInz6obpgDQGcFmaJgB")
 
-# TTS model — "eleven_multilingual_v2" supports ES/EN/DE/IT on free tier
+# TTS model 
 TTS_MODEL = "eleven_multilingual_v2"
 
 # STT model

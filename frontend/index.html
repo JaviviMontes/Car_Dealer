@@ -1,0 +1,649 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AutoPrime Madrid — Voice Assistant</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300&family=DM+Mono:wght@300;400&display=swap" rel="stylesheet" />
+
+  <style>
+    :root {
+      --bg:        #0a0a0a;
+      --surface:   #111111;
+      --border:    #222222;
+      --gold:      #c9a84c;
+      --gold-dim:  #7a6030;
+      --text:      #e8e4dc;
+      --muted:     #555555;
+      --user-bg:   #161612;
+      --agent-bg:  #111111;
+      --radius:    2px;
+      --ff-display: 'Cormorant Garamond', Georgia, serif;
+      --ff-mono:    'DM Mono', monospace;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--ff-mono);
+      font-weight: 300;
+      font-size: 13px;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      overflow-x: hidden;
+    }
+
+    /* subtle grain overlay */
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E");
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    /* ── HEADER ── */
+    header {
+      width: 100%;
+      max-width: 720px;
+      padding: 48px 24px 0;
+      position: relative;
+      z-index: 1;
+    }
+
+    .brand-line {
+      display: flex;
+      align-items: baseline;
+      gap: 16px;
+      margin-bottom: 6px;
+    }
+
+    .brand-name {
+      font-family: var(--ff-display);
+      font-size: 38px;
+      font-weight: 300;
+      letter-spacing: 0.08em;
+      color: var(--text);
+      line-height: 1;
+    }
+
+    .brand-name span {
+      font-weight: 600;
+    }
+
+    .brand-tag {
+      font-size: 10px;
+      letter-spacing: 0.25em;
+      color: var(--gold);
+      text-transform: uppercase;
+      border: 1px solid var(--gold-dim);
+      padding: 3px 8px;
+      border-radius: var(--radius);
+    }
+
+    .brand-sub {
+      font-size: 11px;
+      letter-spacing: 0.15em;
+      color: var(--muted);
+      text-transform: uppercase;
+      margin-bottom: 32px;
+    }
+
+    .divider {
+      width: 100%;
+      height: 1px;
+      background: linear-gradient(90deg, var(--gold-dim), transparent);
+      margin-bottom: 32px;
+    }
+
+    /* ── STATUS BAR ── */
+    .status-bar {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 24px;
+      font-size: 11px;
+      letter-spacing: 0.12em;
+      color: var(--muted);
+      text-transform: uppercase;
+    }
+
+    .status-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--muted);
+      transition: background 0.3s, box-shadow 0.3s;
+    }
+
+    .status-dot.active {
+      background: var(--gold);
+      box-shadow: 0 0 8px var(--gold);
+    }
+
+    .status-dot.listening {
+      background: #e05555;
+      box-shadow: 0 0 8px #e05555;
+      animation: pulse-dot 1s ease-in-out infinite;
+    }
+
+    @keyframes pulse-dot {
+      0%, 100% { opacity: 1; }
+      50%       { opacity: 0.3; }
+    }
+
+    #status-text { transition: color 0.3s; }
+
+    /* ── CONVERSATION ── */
+    #conversation {
+      width: 100%;
+      max-width: 720px;
+      padding: 0 24px;
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      min-height: 320px;
+      max-height: 420px;
+      overflow-y: auto;
+      position: relative;
+      z-index: 1;
+      scrollbar-width: thin;
+      scrollbar-color: var(--border) transparent;
+    }
+
+    #conversation:empty::after {
+      content: 'Say something to begin…';
+      color: var(--muted);
+      font-size: 12px;
+      letter-spacing: 0.1em;
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+    }
+
+    .message {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      animation: msg-in 0.3s ease forwards;
+      opacity: 0;
+      transform: translateY(8px);
+    }
+
+    @keyframes msg-in {
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .message.user  { align-items: flex-end; }
+    .message.agent { align-items: flex-start; }
+
+    .msg-label {
+      font-size: 9px;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+
+    .msg-bubble {
+      max-width: 82%;
+      padding: 12px 16px;
+      line-height: 1.65;
+      border-radius: var(--radius);
+      font-size: 13px;
+    }
+
+    .message.user  .msg-bubble {
+      background: var(--user-bg);
+      border: 1px solid var(--border);
+      color: var(--text);
+    }
+
+    .message.agent .msg-bubble {
+      background: var(--agent-bg);
+      border: 1px solid var(--gold-dim);
+      color: var(--text);
+    }
+
+    /* typing indicator */
+    .typing .msg-bubble {
+      display: flex;
+      gap: 5px;
+      align-items: center;
+      padding: 14px 18px;
+    }
+
+    .typing .dot {
+      width: 5px; height: 5px;
+      border-radius: 50%;
+      background: var(--gold);
+      animation: typing-bounce 1.2s ease-in-out infinite;
+    }
+    .typing .dot:nth-child(2) { animation-delay: 0.2s; }
+    .typing .dot:nth-child(3) { animation-delay: 0.4s; }
+
+    @keyframes typing-bounce {
+      0%, 80%, 100% { transform: translateY(0);    opacity: 0.3; }
+      40%           { transform: translateY(-5px); opacity: 1;   }
+    }
+
+    /* ── CONTROLS ── */
+    .controls {
+      width: 100%;
+      max-width: 720px;
+      padding: 24px 24px 48px;
+      position: relative;
+      z-index: 1;
+    }
+
+    .controls-top {
+      width: 100%;
+      height: 1px;
+      background: linear-gradient(90deg, transparent, var(--border), transparent);
+      margin-bottom: 32px;
+    }
+
+    .mic-area {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 20px;
+    }
+
+    /* mic button */
+    #mic-btn {
+      width: 72px;
+      height: 72px;
+      border-radius: 50%;
+      background: transparent;
+      border: 1px solid var(--gold-dim);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: border-color 0.2s, box-shadow 0.2s, transform 0.15s;
+      position: relative;
+      outline: none;
+    }
+
+    #mic-btn::before {
+      content: '';
+      position: absolute;
+      inset: -5px;
+      border-radius: 50%;
+      border: 1px solid transparent;
+      transition: border-color 0.3s, inset 0.3s;
+    }
+
+    #mic-btn:hover {
+      border-color: var(--gold);
+      box-shadow: 0 0 20px rgba(201,168,76,0.15);
+      transform: scale(1.04);
+    }
+
+    #mic-btn.recording {
+      border-color: #e05555;
+      box-shadow: 0 0 30px rgba(224,85,85,0.25);
+      animation: ring-pulse 1.5s ease-in-out infinite;
+    }
+
+    #mic-btn.recording::before {
+      border-color: rgba(224,85,85,0.3);
+      inset: -10px;
+    }
+
+    @keyframes ring-pulse {
+      0%, 100% { box-shadow: 0 0 20px rgba(224,85,85,0.2); }
+      50%       { box-shadow: 0 0 40px rgba(224,85,85,0.4); }
+    }
+
+    #mic-btn:disabled {
+      opacity: 0.3;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    .mic-icon {
+      width: 22px;
+      height: 22px;
+      fill: none;
+      stroke: var(--gold);
+      stroke-width: 1.5;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+      transition: stroke 0.2s;
+    }
+
+    #mic-btn.recording .mic-icon { stroke: #e05555; }
+
+    .mic-hint {
+      font-size: 10px;
+      letter-spacing: 0.18em;
+      color: var(--muted);
+      text-transform: uppercase;
+    }
+
+    /* waveform canvas */
+    #waveform {
+      width: 200px;
+      height: 32px;
+      opacity: 0;
+      transition: opacity 0.3s;
+    }
+    #waveform.visible { opacity: 1; }
+
+    /* clear button */
+    #clear-btn {
+      background: none;
+      border: none;
+      color: var(--muted);
+      font-family: var(--ff-mono);
+      font-size: 10px;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      cursor: pointer;
+      padding: 6px 0;
+      transition: color 0.2s;
+    }
+    #clear-btn:hover { color: var(--text); }
+
+    /* ── LANG SELECTOR ── */
+    .lang-row {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .lang-label {
+      font-size: 10px;
+      letter-spacing: 0.15em;
+      color: var(--muted);
+      text-transform: uppercase;
+    }
+
+    .lang-btn {
+      background: none;
+      border: 1px solid var(--border);
+      color: var(--muted);
+      font-family: var(--ff-mono);
+      font-size: 10px;
+      letter-spacing: 0.1em;
+      padding: 3px 9px;
+      border-radius: var(--radius);
+      cursor: pointer;
+      transition: border-color 0.2s, color 0.2s;
+    }
+
+    .lang-btn:hover,
+    .lang-btn.active {
+      border-color: var(--gold-dim);
+      color: var(--gold);
+    }
+
+    /* scrollbar */
+    #conversation::-webkit-scrollbar       { width: 3px; }
+    #conversation::-webkit-scrollbar-track { background: transparent; }
+    #conversation::-webkit-scrollbar-thumb { background: var(--border); }
+  </style>
+</head>
+<body>
+
+  <header>
+    <div class="brand-line">
+      <div class="brand-name">Auto<span>Prime</span></div>
+      <div class="brand-tag">Voice AI</div>
+    </div>
+    <div class="brand-sub">Madrid · BMW &amp; MINI · Authorised Dealer</div>
+    <div class="divider"></div>
+    <div class="status-bar">
+      <div class="status-dot" id="status-dot"></div>
+      <span id="status-text">Ready</span>
+    </div>
+  </header>
+
+  <div id="conversation"></div>
+
+  <div class="controls">
+    <div class="controls-top"></div>
+    <div class="mic-area">
+      <canvas id="waveform" width="200" height="32"></canvas>
+
+      <button id="mic-btn" aria-label="Hold to speak">
+        <!-- mic SVG -->
+        <svg class="mic-icon" viewBox="0 0 24 24">
+          <rect x="9" y="2" width="6" height="11" rx="3"/>
+          <path d="M5 10a7 7 0 0 0 14 0"/>
+          <line x1="12" y1="19" x2="12" y2="22"/>
+          <line x1="8"  y1="22" x2="16" y2="22"/>
+        </svg>
+      </button>
+
+      <div class="mic-hint" id="mic-hint">Hold to speak</div>
+
+      <div class="lang-row">
+        <span class="lang-label">Lang</span>
+        <button class="lang-btn active" data-lang="en">EN</button>
+        <button class="lang-btn" data-lang="es">ES</button>
+        <button class="lang-btn" data-lang="de">DE</button>
+        <button class="lang-btn" data-lang="it">IT</button>
+      </div>
+
+      <button id="clear-btn">Clear conversation</button>
+    </div>
+  </div>
+
+<script>
+  const API = 'http://localhost:8000';
+
+  // ── State ─────────────────────────────────────────────────────────────────
+  let history    = [];
+  let mediaRec   = null;
+  let audioChunks = [];
+  let stream     = null;
+  let analyser   = null;
+  let animFrame  = null;
+  let selectedLang = 'en';
+
+  // ── DOM refs ──────────────────────────────────────────────────────────────
+  const micBtn   = document.getElementById('mic-btn');
+  const micHint  = document.getElementById('mic-hint');
+  const conv     = document.getElementById('conversation');
+  const dotEl    = document.getElementById('status-dot');
+  const statusEl = document.getElementById('status-text');
+  const waveform = document.getElementById('waveform');
+  const wCtx     = waveform.getContext('2d');
+
+  // ── Status helpers ────────────────────────────────────────────────────────
+  function setStatus(text, mode = '') {
+    statusEl.textContent = text;
+    dotEl.className = 'status-dot' + (mode ? ' ' + mode : '');
+  }
+
+  // ── Message rendering ─────────────────────────────────────────────────────
+  function addMessage(role, text) {
+    const wrap = document.createElement('div');
+    wrap.className = `message ${role}`;
+    wrap.innerHTML = `
+      <div class="msg-label">${role === 'user' ? 'You' : 'Alex'}</div>
+      <div class="msg-bubble">${text}</div>`;
+    conv.appendChild(wrap);
+    conv.scrollTop = conv.scrollHeight;
+    return wrap;
+  }
+
+  function addTyping() {
+    const wrap = document.createElement('div');
+    wrap.className = 'message agent typing';
+    wrap.innerHTML = `
+      <div class="msg-label">Alex</div>
+      <div class="msg-bubble">
+        <div class="dot"></div><div class="dot"></div><div class="dot"></div>
+      </div>`;
+    conv.appendChild(wrap);
+    conv.scrollTop = conv.scrollHeight;
+    return wrap;
+  }
+
+  // ── Waveform ──────────────────────────────────────────────────────────────
+  function drawWave() {
+    if (!analyser) return;
+    const buf = new Uint8Array(analyser.frequencyBinCount);
+    analyser.getByteTimeDomainData(buf);
+
+    wCtx.clearRect(0, 0, 200, 32);
+    wCtx.strokeStyle = '#c9a84c';
+    wCtx.lineWidth   = 1.5;
+    wCtx.beginPath();
+
+    const step = 200 / buf.length;
+    buf.forEach((v, i) => {
+      const x = i * step;
+      const y = (v / 128) * 16;
+      i === 0 ? wCtx.moveTo(x, y) : wCtx.lineTo(x, y);
+    });
+    wCtx.stroke();
+    animFrame = requestAnimationFrame(drawWave);
+  }
+
+  function stopWave() {
+    cancelAnimationFrame(animFrame);
+    wCtx.clearRect(0, 0, 200, 32);
+    waveform.classList.remove('visible');
+  }
+
+  // ── Recording ─────────────────────────────────────────────────────────────
+  async function startRecording() {
+    try {
+      stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    } catch {
+      setStatus('Microphone access denied', '');
+      return;
+    }
+
+    // Waveform analyser
+    const ctx = new AudioContext();
+    analyser  = ctx.createAnalyser();
+    analyser.fftSize = 512;
+    ctx.createMediaStreamSource(stream).connect(analyser);
+    waveform.classList.add('visible');
+    drawWave();
+
+    audioChunks = [];
+    mediaRec    = new MediaRecorder(stream);
+    mediaRec.ondataavailable = e => audioChunks.push(e.data);
+    mediaRec.start();
+
+    micBtn.classList.add('recording');
+    micHint.textContent = 'Release to send';
+    setStatus('Listening…', 'listening');
+  }
+
+  async function stopRecording() {
+    if (!mediaRec || mediaRec.state === 'inactive') return;
+
+    return new Promise(resolve => {
+      mediaRec.onstop = resolve;
+      mediaRec.stop();
+      stream.getTracks().forEach(t => t.stop());
+      stopWave();
+      micBtn.classList.remove('recording');
+      micHint.textContent = 'Processing…';
+      micBtn.disabled = true;
+      setStatus('Transcribing…', 'active');
+    });
+  }
+
+  // ── Full pipeline ─────────────────────────────────────────────────────────
+  async function runPipeline() {
+    const blob = new Blob(audioChunks, { type: 'audio/webm' });
+
+    const form = new FormData();
+    form.append('audio',   blob, 'recording.webm');
+    form.append('history', JSON.stringify(history));
+
+    // Add a language hint to the last user message via history if needed
+    // (model auto-detects, but we can prime it)
+    const typing = addTyping();
+
+    let data;
+    try {
+      const res = await fetch(`${API}/conversation`, { method: 'POST', body: form });
+      if (!res.ok) throw new Error(await res.text());
+      data = await res.json();
+    } catch (err) {
+      typing.remove();
+      addMessage('agent', '⚠ Could not reach the server. Please check the backend is running.');
+      setStatus('Error', '');
+      micBtn.disabled = false;
+      micHint.textContent = 'Hold to speak';
+      return;
+    }
+
+    // Remove typing indicator
+    typing.remove();
+
+    // Render transcript + reply
+    addMessage('user',  data.transcript);
+    addMessage('agent', data.reply);
+
+    // Update history
+    history.push({ role: 'user',      content: data.transcript });
+    history.push({ role: 'assistant', content: data.reply      });
+
+    // Play audio
+    setStatus('Speaking…', 'active');
+    const mp3  = Uint8Array.from(atob(data.audio_b64), c => c.charCodeAt(0));
+    const blob2 = new Blob([mp3], { type: 'audio/mpeg' });
+    const url   = URL.createObjectURL(blob2);
+    const audio = new Audio(url);
+    audio.onended = () => {
+      URL.revokeObjectURL(url);
+      setStatus('Ready', '');
+      micBtn.disabled = false;
+      micHint.textContent = 'Hold to speak';
+    };
+    audio.play().catch(() => {
+      setStatus('Ready', '');
+      micBtn.disabled = false;
+      micHint.textContent = 'Hold to speak';
+    });
+  }
+
+  // ── Mic button events ─────────────────────────────────────────────────────
+  micBtn.addEventListener('mousedown',  () => startRecording());
+  micBtn.addEventListener('mouseup',    async () => { await stopRecording(); await runPipeline(); });
+  micBtn.addEventListener('touchstart', e  => { e.preventDefault(); startRecording(); });
+  micBtn.addEventListener('touchend',   async e => { e.preventDefault(); await stopRecording(); await runPipeline(); });
+
+  // ── Language selector ─────────────────────────────────────────────────────
+  document.querySelectorAll('.lang-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.lang-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      selectedLang = btn.dataset.lang;
+      // Prime the history with a language instruction on first use
+      // (model auto-detects anyway, so this is just a visual affordance)
+    });
+  });
+
+  // ── Clear ─────────────────────────────────────────────────────────────────
+  document.getElementById('clear-btn').addEventListener('click', () => {
+    history = [];
+    conv.innerHTML = '';
+    setStatus('Ready', '');
+  });
+
+  // ── Init ──────────────────────────────────────────────────────────────────
+  setStatus('Ready', '');
+</script>
+</body>
+</html>
