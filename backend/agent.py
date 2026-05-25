@@ -14,6 +14,8 @@ from pathlib import Path
 import httpx
 from fastapi import HTTPException
 
+import asyncio
+
 OLLAMA_URL = os.getenv("OLLAMA_URL", "http://localhost:11434")
 OLLAMA_MODEL = os.getenv("OLLAMA_MODEL", "mistral")
 
@@ -21,6 +23,15 @@ OLLAMA_MODEL = os.getenv("OLLAMA_MODEL", "mistral")
 _KB_PATH = Path(__file__).parent / "dealership.json"
 _KB: dict = json.loads(_KB_PATH.read_text())
 
+
+async def _warmup():
+    try:
+        await chat([{"role": "user", "content": "hi"}])
+        print("✓ Ollama warmed up")
+    except Exception:
+        pass
+
+asyncio.ensure_future(_warmup())
 
 def _build_system_prompt() -> str:
     d = _KB["dealership"]
@@ -83,7 +94,7 @@ async def chat(messages: list[dict]) -> str:
     }
 
     try:
-        async with httpx.AsyncClient(timeout=60) as client:
+        async with httpx.AsyncClient(timeout=120) as client:
             response = await client.post(
                 f"{OLLAMA_URL}/api/chat",
                 json=payload,

@@ -9,19 +9,26 @@ Endpoints:
   POST /conversation — full pipeline in one call (STT → LLM → TTS)
   GET  /health      — sanity check
 """
+from dotenv import load_dotenv
+load_dotenv()
 
 from fastapi import FastAPI, File, UploadFile, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import Response
 from pydantic import BaseModel
+from contextlib import asynccontextmanager
 
 import agent
 import elevenlabs_client as el
 
+@asynccontextmanager
+async def lifespan(app):
+    await agent._warmup()
+    yield
+
 app = FastAPI(
     title="AutoPrime Voice Agent",
-    description="Voice AI support agent for automotive dealerships — powered by ElevenLabs",
-    version="0.1.0",
+    lifespan=lifespan,
 )
 
 # Allow the HTML frontend (served from a different port in dev) to call the API
